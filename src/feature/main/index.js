@@ -67,15 +67,17 @@ const MainScreen = () => {
                         todo.map((item, ind) => (
                             <Grid
                                 item xs={12}
+                                key={ind}
                             >
                                 <Input
+                                    key={item.id}
                                     no={ind + 1}
                                     id={item.id}
                                     value={item.value}
                                     checked={item.checked}
-                                    onCheck={() => checkHandle(item.id)}
+                                    onCheck={() => checkHandle(item.id, item.checked)}
                                     favorite={item.favorite}
-                                    onFavorite={() => favoriteHandle(item.id)}
+                                    onFavorite={() => favoriteHandle(item.id, item.favorite)}
                                     onDelete={() => deleteHandle(item.id)}
                                     onSave={updateHandle}
                                 />

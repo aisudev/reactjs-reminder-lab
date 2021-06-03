@@ -1,5 +1,6 @@
 import { createContext, useEffect, useState } from 'react'
 import { v4 as uuid } from 'uuid'
+import { GetAllTodoAPI, CreateTodoAPI, UpdateTodoAPI, DeleteTodoAPI } from './api'
 export const mainContext = createContext()
 
 export default function MainController({ children }) {
@@ -7,69 +8,79 @@ export default function MainController({ children }) {
     const [todo, setTodo] = useState([])
     const [input, setInput] = useState('')
     const [summary, setSummary] = useState({
-        total:0,
-        progress:0,
-        favorite:0
+        total: 0,
+        progress: 0,
+        favorite: 0
     })
 
     useEffect(() => {
+        load()
+    }, [])
+
+    useEffect(()=>{
         setSummary({
             total:todo.length,
-            progress:todo.filter(item=>item.checked).length,
-            favorite:todo.filter(item=>item.favorite).length
+            progress:todo.filter(item=>item.checked === true).length,
+            favorite:todo.filter(item=>item.favorite === true).length,
         })
     }, [todo])
 
-    function createHandle() {
-        setTodo([
-            ...todo,
-            {
-                id: uuid(),
-                value: input,
-                favorite: false,
-                checked: false
-            }
-        ])
-        return setInput('')
+    function load() {
+        GetAllTodoAPI().then(res => {
+            setTodo(res.data.data.map(item => raw_to_data(item)))
+            
+        }).catch(err => {
+            console.error(err)
+        })
     }
 
-    function updateHandle(id, value) {
-        return setTodo(
-            todo.map(item =>
-                item.id === id ? ({
-                    ...item,
-                    value: value
-                }) : (item)
-            )
-        )
+    async function createHandle() {
+        await CreateTodoAPI(data_to_raw({
+            id: uuid(),
+            value: input,
+            favorite: false,
+            checked: false
+        }))
+        setInput('')
+        return load()
     }
 
-    function checkHandle(id) {
-        return setTodo(
-            todo.map(item =>
-                item.id === id ? ({
-                    ...item,
-                    checked: !item.checked
-                }) : (item)
-            )
-        )
+    async function updateHandle(id, value) {
+        await UpdateTodoAPI(id, { name: value })
+        return load()
     }
 
-    function favoriteHandle(id) {
-        return setTodo(
-            todo.map(item =>
-                item.id === id ? ({
-                    ...item,
-                    favorite: !item.favorite
-                }) : (item)
-            )
-        )
+    async function checkHandle(id, value) {
+        await UpdateTodoAPI(id, { progress:!value })
+        return load()
     }
 
-    function deleteHandle(id) {
-        return setTodo(
-            todo.filter(item => (item.id !== id))
-        )
+    async function favoriteHandle(id, value) {
+        await UpdateTodoAPI(id, { favorite:!value })
+        return load()
+    }
+
+    async function deleteHandle(id) {
+        await DeleteTodoAPI(id)
+        return load()
+    }
+
+    function raw_to_data(data) {
+        return {
+            id: data.uuid,
+            value: data.name,
+            favorite: data.favorite,
+            checked: data.progress
+        }
+    }
+
+    function data_to_raw(data) {
+        return {
+            uuid: data.id,
+            name: data.value,
+            favorite: data.favorite,
+            progress: data.progress
+        }
     }
 
     return (
